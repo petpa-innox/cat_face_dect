@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+from sewar.full_ref import uqi
 # Constants.
 INPUT_WIDTH = 640
 INPUT_HEIGHT = 640
@@ -52,7 +52,7 @@ def post_process(input_image, outputs):
 	class_ids = []
 	confidences = []
 	boxes = []
-
+	nms_boxes = []
 	# Rows.
 	rows = outputs[0].shape[1]
 
@@ -93,55 +93,88 @@ def post_process(input_image, outputs):
 	# lower confidences.
 	indices = cv2.dnn.NMSBoxes(boxes, confidences, CONFIDENCE_THRESHOLD, NMS_THRESHOLD)
 	for i in indices:
-		box = boxes[i]
-		left = box[0]
-		top = box[1]
-		width = box[2]
-		height = box[3]
-		cv2.rectangle(input_image, (left, top), (left + width, top + height), BLUE, 3*THICKNESS)
-		label = "{}:{:.2f}".format(classes[class_ids[i]], confidences[i])
-		draw_label(input_image, label, left, top)
+		nms_boxes.append([boxes[i],class_ids[i],confidences[i]])
+	return nms_boxes
 
-	return input_image
+def get_vertex(box,shape):
+	p_width = shape[0]
+	p_height= shape[1] 
+	left = box[0]
+	top = box[1]
+	width = box[2]
+	height = box[3]
+	right = left +width
+	down = top +height
+	left = max(0,min(shape[1],left))
+	right = max(0,min(shape[1],right))#
+	top = max(0,min(shape[0],top))#
+	down = max(0,min(shape[0],down))#
+	return left,top,right,down
 
+def pic_size_pad(input_img,target_size=224):
+	img_ratio = target_size/max(input_img.shape[:2])
+	input_img = cv2.resize(input_img,(0,0),fx=img_ratio,fy=img_ratio)
+	delta_w = target_size - input_img.shape[1]
+	delta_h = target_size - input_img.shape[0]
+	top, bottom = delta_h//2, delta_h-(delta_h//2)
+	left, right = delta_w//2, delta_w-(delta_w//2)
+	out_img = cv2.copyMakeBorder(input_img, top, bottom, left, right, cv2.BORDER_CONSTANT)
+	return out_img,input_img
 
+modelWeights = "/home/holmes/code/cat_face_detection/second_train.onnx"
+cat_face_path = '/home/holmes/code/cat_face_detection'
+vdieo_path = '/home/holmes/code/cat_face_detection/cat.mp4'
+img_path  = '/home/holmes/code/cat_face_detection/cat.jpg'
 if __name__ == '__main__':
+	classes = ['cat']
+	cat_std = cv2.imread('/home/holmes/code/cat_face_detection/data/cat_face/cf_0_0.jpg')
+	shape = (224,224)
+	cat_std = cv2.resize(cat_std,shape)
 
-    classes = ['cat']
-    # Load image.
-    capture = cv2.VideoCapture('/home/holmes/code/cat_face_detection/cat.mp4')
-    while True:
-        print("showing")
-        ret, frame = capture.read()
-        if not ret:
-            break
-	
+	cap = cv2.VideoCapture(vdieo_path)
+	net = cv2.dnn.readNet(modelWeights)
+	iter_ = 0
+	while (cap.isOpened()):
+		ret, frame = cap.read()
+		# frame = cv2.imread(img_path)
+		if ret == True:
+			# # Give the weight files to the model and load the network using them.
+			# # Process image.
+			detections = pre_process(frame, net)
+			boxes = post_process(frame, detections)
+			
+			for i, [box,class_id,confidences] in enumerate(boxes):
+				left,top,right,down = get_vertex(box,frame.shape)
+				head_img = frame[top:down,left:right]#height(y),width(x)
+				head_img_pad,head_img = pic_size_pad(head_img)
 
-        cv2.imshow('video', frame)
-	
-        # frame = cv2.imread('/home/holmes/code/cat_face_detection/cat.jpg')
+				head_img = cv2.resize(head_img,shape)
+				similarity = uqi(cat_std,head_img)
+				label_1 = "{}:{:.2f}".format('sml', similarity)
+				draw_label(head_img, label_1, 0, 0)
+				cv2.imshow('head', head_img)
+				# cv2.imwrite(cat_face_path+'/cf_{}_{}.jpg'.format(iter_,i),head_img)
+				cv2.rectangle(frame, (left, top), (right, down), BLUE, 3*THICKNESS)
+				label = "{}:{:.2f}".format(classes[class_id], confidences)
+				draw_label(frame, label, left, top)
+				
+			# # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
+			t, _ = net.getPerfProfile()
+			label = 'Inference time: %.2f ms' % (t * 1000.0 / cv2.getTickFrequency())
+			# print(label)
+			cv2.putText(frame, label, (20, 40), FONT_FACE, FONT_SCALE, RED, THICKNESS, cv2.LINE_AA)
+			cv2.imshow('Frame', frame)
+			iter_+=1
+			# 按q退出
+			key = cv2.waitKey(0)
+			if key== ord('q'):
+				break
+			elif key ==ord('n'):
+				continue
+			# break
+		else:
+			break
+	cap.release()
+	cv2.destroyAllWindows()
 
-        # # Give the weight files to the model and load the network using them.
-        # modelWeights = "/home/holmes/code/cat_face_detection/second_train.onnx"
-        # net = cv2.dnn.readNet(modelWeights)
 
-        # # Process image.
-        # detections = pre_process(frame, net)
-        # img = post_process(frame.copy(), detections)
-
-        # # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
-        # t, _ = net.getPerfProfile()
-        # label = 'Inference time: %.2f ms' % (t * 1000.0 / cv2.getTickFrequency())
-        # print(label)
-        # cv2.putText(img, label, (20, 40), FONT_FACE, FONT_SCALE, RED, THICKNESS, cv2.LINE_AA)
-
-        # cv2.imshow('Output', img)
-        # cv2.waitKey(0)
-
-
-        if cv2.waitKey(50) == ord('q'):
-            break
-    capture.release()
-    cv2.destroyAllWindows()
-
- 
