@@ -34,8 +34,12 @@ def draw_label(input_image, label, left, top):
 
 def pre_process(input_image, net):
 	# Create a 4D blob from a frame.
-	blob = cv2.dnn.blobFromImage(input_image, 1/255, (INPUT_WIDTH, INPUT_HEIGHT), [0,0,0], 1, crop=False)
-
+	blob = cv2.dnn.blobFromImage(input_image, 1.0/255, (INPUT_WIDTH, INPUT_HEIGHT), [0,0,0], swapRB=True,crop=False)
+	# print(blob.shape)
+	# img_blob =  blob[0].reshape(blob.shape[2],blob.shape[3],blob.shape[1])
+	# img_blob = blob.reshape(blob.shape[2] * blob.shape[1], blob.shape[3], 1) 
+	# img_blob = img_blob.reshape(img_blob.shape[1],img_blob.shape[1],3)
+	# cv2.imshow("blob",img_blob)
 	# Sets the input to the network.
 	net.setInput(blob)
 
@@ -107,7 +111,7 @@ def get_vertex(box,shape):
 	down = top +height
 	left = max(0,min(shape[1],left))
 	right = max(0,min(shape[1],right))#
-	top = max(0,min(shape[0],top))#
+	top = max(0,min(  shape[0],top))#
 	down = max(0,min(shape[0],down))#
 	return left,top,right,down
 
@@ -121,11 +125,11 @@ def pic_size_pad(input_img,target_size=224):
 	out_img = cv2.copyMakeBorder(input_img, top, bottom, left, right, cv2.BORDER_CONSTANT)
 	return out_img,input_img
 
-modelWeights = "../weight/second_train.onnx"
-cat_face_path = '../'
-vdieo_path = '../cat.mp4'
-img_path  = '../cat.jpg'
-std_cat_face = '../cf_std.jpg'
+modelWeights = "weight/second_train.onnx"
+cat_face_path = ''
+vdieo_path = 'data/video/1.mp4'
+img_path  = 'cat.jpg'
+std_cat_face = 'cf_std.jpg'
 
 if __name__ == '__main__':
 	classes = ['cat']
@@ -168,7 +172,7 @@ if __name__ == '__main__':
 			cv2.imshow('Frame', frame)
 			iter_+=1
 			# 按q退出
-			key = cv2.waitKey(0)
+			key = cv2.waitKey(1)
 			if key== ord('q'):
 				break
 			elif key ==ord('n'):

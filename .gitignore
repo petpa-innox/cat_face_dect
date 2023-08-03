@@ -6,4 +6,5 @@ build/
 *.onnx
 !weight/*.onnx
 
-data/
+data/cat_face
+
