@@ -127,9 +127,9 @@ def pic_size_pad(input_img,target_size=224):
 
 modelWeights = "weight/second_train.onnx"
 cat_face_path = ''
-vdieo_path = 'data/video/1.mp4'
+vdieo_path = 'data/video/2.mp4'
 img_path  = 'cat.jpg'
-std_cat_face = 'cf_std.jpg'
+std_cat_face = 'cf_0_0.jpg'
 
 if __name__ == '__main__':
 	classes = ['cat']
@@ -139,6 +139,10 @@ if __name__ == '__main__':
 
 	cap = cv2.VideoCapture(vdieo_path)
 	net = cv2.dnn.readNet(modelWeights)
+	if cv2.cuda.getCudaEnabledDeviceCount()>0:	
+		net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+		net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
+
 	iter_ = 0
 	while (cap.isOpened()):
 		ret, frame = cap.read()
