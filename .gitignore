@@ -2,5 +2,8 @@ bin/
 build/
 .cache/
 *.pt
+
 *.onnx
+!weight/*.onnx
+
 data/

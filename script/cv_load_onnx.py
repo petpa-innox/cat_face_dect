@@ -121,13 +121,15 @@ def pic_size_pad(input_img,target_size=224):
 	out_img = cv2.copyMakeBorder(input_img, top, bottom, left, right, cv2.BORDER_CONSTANT)
 	return out_img,input_img
 
-modelWeights = "/home/holmes/code/cat_face_detection/second_train.onnx"
-cat_face_path = '/home/holmes/code/cat_face_detection'
-vdieo_path = '/home/holmes/code/cat_face_detection/cat.mp4'
-img_path  = '/home/holmes/code/cat_face_detection/cat.jpg'
+modelWeights = "../weight/second_train.onnx"
+cat_face_path = '../'
+vdieo_path = '../cat.mp4'
+img_path  = '../cat.jpg'
+std_cat_face = '../cf_std.jpg'
+
 if __name__ == '__main__':
 	classes = ['cat']
-	cat_std = cv2.imread('/home/holmes/code/cat_face_detection/data/cat_face/cf_0_0.jpg')
+	cat_std = cv2.imread(std_cat_face)
 	shape = (224,224)
 	cat_std = cv2.resize(cat_std,shape)
 
