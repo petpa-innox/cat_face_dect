@@ -128,8 +128,8 @@ def pic_size_pad(input_img,target_size=224):
 modelWeights = "weight/second_train.onnx"
 cat_face_path = ''
 vdieo_path = 'data/video/2.mp4'
-img_path  = 'cat.jpg'
-std_cat_face = 'cf_0_0.jpg'
+img_path  = 'data/picture/cat.jpg'
+std_cat_face = 'data/picture/cf_0_0.jpg'
 
 if __name__ == '__main__':
 	classes = ['cat']
