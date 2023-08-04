@@ -127,10 +127,10 @@ def pic_size_pad(input_img,target_size=224):
 	return out_img,input_img
 
 modelWeights = "weight/second_train.onnx"
-cat_face_path = ''
+cat_face_path = 'data/picture'
 vdieo_path = 'data/video/2.mp4'
 img_path  = 'data/picture/cat.jpg'
-std_cat_face = 'data/picture/cf_std.jpg'
+std_cat_face = 'data/picture/cf_std_1.jpg'
 
 if __name__ == '__main__':
 	classes = ['cat']
@@ -150,6 +150,7 @@ if __name__ == '__main__':
 		net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 
 	iter_ = 0
+	head_get =False
 	while (True):
 
 		frames = pipeline.wait_for_frames()
@@ -168,14 +169,16 @@ if __name__ == '__main__':
 				head_img_pad,head_img = pic_size_pad(head_img)
 
 				head_img = cv2.resize(head_img,shape)
+				head_img_t = head_img.copy()
 				similarity = uqi(cat_std,head_img)
 				label_1 = "{}:{:.2f}".format('sml', similarity)
-				draw_label(head_img, label_1, 0, 0)
-				cv2.imshow('head', head_img)
+				draw_label(head_img_t, label_1, 0, 0)
+				cv2.imshow('head', head_img_t)
 				# cv2.imwrite(cat_face_path+'/cf_{}_{}.jpg'.format(iter_,i),head_img)
 				cv2.rectangle(frame, (left, top), (right, down), BLUE, 3*THICKNESS)
 				label = "{}:{:.2f}".format(classes[class_id], confidences)
 				draw_label(frame, label, left, top)
+				head_get= True
 				
 			# # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
 			t, _ = net.getPerfProfile()
@@ -190,6 +193,9 @@ if __name__ == '__main__':
 				break
 			elif key ==ord('n'):
 				continue
+			elif key ==ord('h'):
+				if head_get:
+					cv2.imwrite(cat_face_path+'/cf_{}_{}.jpg'.format(iter_,i),head_img)
 			# break
 		else:
 			break
