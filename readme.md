@@ -27,7 +27,7 @@ The following 80 entries tell the class scores of 80 objects of the COCO dataset
 
 we need to be careful with the shape. With OpenCV-Python 4.5.5, the object is a tuple of a 3-D array of size 1x row x column. It should be row x column. Hence, the array is accessed from the zeroth index. 
 
-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
+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
 
 [ref](https://learnopencv.com/object-detection-using-yolov5-and-opencv-dnn-in-c-and-python/)
 
