@@ -126,6 +126,7 @@ def pic_size_pad(input_img,target_size=224):
 	out_img = cv2.copyMakeBorder(input_img, top, bottom, left, right, cv2.BORDER_CONSTANT)
 	return out_img,input_img
 
+filter_point = []
 modelWeights = "weight/second_train.onnx"
 cat_face_path = 'data/picture'
 vdieo_path = 'data/video/2.mp4'
@@ -163,23 +164,43 @@ if __name__ == '__main__':
 			detections = pre_process(frame, net)
 			boxes = post_process(frame, detections)
 			
+			#filter counter decreases by time :-1/5it
+			if iter_%30==0:
+				if len(filter_point)>0:
+					for i in reversed(range(len(filter_point))):
+						filter_point[i][2]-=1
+						if filter_point[i][2]<=0:
+							filter_point.pop(i)
+			print("point",len(filter_point))
 			for i, [box,class_id,confidences] in enumerate(boxes):
 				left,top,right,down = get_vertex(box,frame.shape)
-				head_img = frame[top:down,left:right]#height(y),width(x)
-				head_img_pad,head_img = pic_size_pad(head_img)
+				m_x =  left+right/2
+				m_y =  top+down/2
+				m_p =  np.array([m_x,m_y,0],dtype=np.int16)
+				if len(filter_point) ==0:
+					filter_point.append(m_p)
+				for k in filter_point:
+					if (np.linalg.norm(m_p[:2]-k[:2])<100):#less than 20 pixel
+						k[2]+=2
+						if k[2]>10:
+							k[2]=10
+						if k[2]>4:# apper number is greater than 2 times
+							head_img = frame[top:down,left:right]#height(y),width(x)
+							head_img_pad,head_img = pic_size_pad(head_img)
+							head_img = cv2.resize(head_img,shape)
+							similarity = uqi(cat_std,head_img)
+							label_1 = "{}:{:.2f}".format('sml', similarity)
+							draw_label(head_img, label_1, 0, 0)
+							cv2.imshow('head', head_img)
+							# cv2.imwrite(cat_face_path+'/cf_{}_{}.jpg'.format(iter_,i),head_img)
+							cv2.rectangle(frame, (left, top), (right, down), BLUE, 3*THICKNESS)
+							label = "{}:{:.2f}".format(classes[class_id], confidences)
+							draw_label(frame, label, left, top)
+						break
+				else:
+					filter_point.append(m_p)
 
-				head_img = cv2.resize(head_img,shape)
-				head_img_t = head_img.copy()
-				similarity = uqi(cat_std,head_img)
-				label_1 = "{}:{:.2f}".format('sml', similarity)
-				draw_label(head_img_t, label_1, 0, 0)
-				cv2.imshow('head', head_img_t)
-				# cv2.imwrite(cat_face_path+'/cf_{}_{}.jpg'.format(iter_,i),head_img)
-				cv2.rectangle(frame, (left, top), (right, down), BLUE, 3*THICKNESS)
-				label = "{}:{:.2f}".format(classes[class_id], confidences)
-				draw_label(frame, label, left, top)
-				head_get= True
-				
+					
 			# # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
 			t, _ = net.getPerfProfile()
 			label = 'Inference time: %.2f ms' % (t * 1000.0 / cv2.getTickFrequency())
